@@ -63,22 +63,22 @@ def listenforinput():
     field[posappley][posapplex] = "[o]"
 
     while True:
-        if keyboard.is_pressed("w"):
+        if keyboard.is_pressed("w") or keyboard.is_pressed("up"):
             direction = "w"
             break
-        elif keyboard.is_pressed("a"):
+        elif keyboard.is_pressed("a") or keyboard.is_pressed("left"):
             direction = "a"
             break
-        elif keyboard.is_pressed("s"):
+        elif keyboard.is_pressed("s") or keyboard.is_pressed("down"):
             direction = "s"
             break
-        elif keyboard.is_pressed("d"):
+        elif keyboard.is_pressed("d") or keyboard.is_pressed("right"):
             direction = "d"
             break
 
         time.sleep(0.01)
 
-    while keyboard.is_pressed("w") or keyboard.is_pressed("a") or keyboard.is_pressed("s") or keyboard.is_pressed("d"):
+    while keyboard.is_pressed("w") or keyboard.is_pressed("a") or keyboard.is_pressed("s") or keyboard.is_pressed("d") or keyboard.is_pressed("right") or keyboard.is_pressed("down") or keyboard.is_pressed("left") or keyboard.is_pressed("up"):
         time.sleep(0.1)
     
     if direction == "w":
