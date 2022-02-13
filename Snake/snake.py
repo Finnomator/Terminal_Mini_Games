@@ -2,6 +2,9 @@ import time
 import random
 import keyboard
 import os
+import threading
+
+direction = ""
 
 def writefield(fields):
     os.system("cls")
@@ -10,6 +13,24 @@ def writefield(fields):
             print(fields[i][j],end="")
         print("")
     print("")
+
+def listener():
+    global direction
+    while True:
+        if keyboard.is_pressed("w") or keyboard.is_pressed("up"):
+            direction = "w"
+            
+        elif keyboard.is_pressed("a") or keyboard.is_pressed("left"):
+            direction = "a"
+
+        elif keyboard.is_pressed("s") or keyboard.is_pressed("down"):
+            direction = "s"
+            
+        elif keyboard.is_pressed("d") or keyboard.is_pressed("right"):
+            direction = "d"
+            
+
+        time.sleep(0.01)
 
 def spawnapple():
 
@@ -50,6 +71,7 @@ def listenforinput():
     global posappley
     global visitedfields
     global c
+    global direction
 
     visitedfields.append([])
 
@@ -62,25 +84,6 @@ def listenforinput():
     
     field[posappley][posapplex] = "[o]"
 
-    while True:
-        if keyboard.is_pressed("w") or keyboard.is_pressed("up"):
-            direction = "w"
-            break
-        elif keyboard.is_pressed("a") or keyboard.is_pressed("left"):
-            direction = "a"
-            break
-        elif keyboard.is_pressed("s") or keyboard.is_pressed("down"):
-            direction = "s"
-            break
-        elif keyboard.is_pressed("d") or keyboard.is_pressed("right"):
-            direction = "d"
-            break
-
-        time.sleep(0.01)
-
-    while keyboard.is_pressed("w") or keyboard.is_pressed("a") or keyboard.is_pressed("s") or keyboard.is_pressed("d") or keyboard.is_pressed("right") or keyboard.is_pressed("down") or keyboard.is_pressed("left") or keyboard.is_pressed("up"):
-        time.sleep(0.1)
-    
     if direction == "w":
         posy-=1
     elif direction == "a":
@@ -107,7 +110,7 @@ def listenforinput():
         if field[posy][posx] == "[=]":
             gameover()
     except IndexError:
-        print("",end="")
+        pass
 
     try:
         field[posy][posx] = "[0]"
@@ -157,12 +160,16 @@ spawnapple()
 
 writefield(field)
 
+threading.Thread(target=listener).start()
+
 while True:
     if posx == posapplex and posy == posappley:
         spawnapple()
 
     c+=1
     listenforinput()
+
+    time.sleep(0.5)
 
     if len(schwanzteile) == len(field[0])*len(field):
         print("WoW you won!")
