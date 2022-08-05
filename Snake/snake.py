@@ -1,178 +1,164 @@
+from random import randint
+from threading import Thread
 import time
-import random
-import keyboard
-import os
-import threading
+from keyboard import is_pressed
 
-direction = ""
 
-def writefield(fields):
-    os.system("cls")
-    for i in range(len(fields)):
-        for j in range(len(fields[i])):
-            print(fields[i][j],end="")
-        print("")
-    print("")
+class SnakeGame:
 
-def listener():
-    global direction
-    while True:
-        if keyboard.is_pressed("w") or keyboard.is_pressed("up"):
-            direction = "w"
-            
-        elif keyboard.is_pressed("a") or keyboard.is_pressed("left"):
-            direction = "a"
+    empty_field = "[ ]"
+    snake_field = "[=]"
+    snake_heads = ["[A]", "[>]", "[V]", "[<]"]
+    apple_field = "[O]"
+    MOVE_CURSOR_UP = "\033[A"
+    key_map = "WDSA"
+    score = 0
 
-        elif keyboard.is_pressed("s") or keyboard.is_pressed("down"):
-            direction = "s"
-            
-        elif keyboard.is_pressed("d") or keyboard.is_pressed("right"):
-            direction = "d"
-            
+    def __init__(self, field_size=(10, 10), update_delay=0.5) -> None:
+        self.field_size = field_size
+        self.field = [
+            [self.empty_field for _ in range(field_size[0])]
+            for _ in range(field_size[1])
+        ]
+        self.snake_poses = [(0, 0)]
+        self.direction = -1
+        self.snake_spawn = self.snake_poses[0]
+        self.update_delay = update_delay
+        self.__printed = False
+        self.run = True
+        self.key_listener = Thread(target=self.listen_for_input)
+        self.spawn_snake()
+        self.apple_pos = self.spawn_apple()
+        self.key_listener.start()
 
-        time.sleep(0.01)
+    def wait_for_start(self):
+        while self.direction in (-1, 0, 3):
+            time.sleep(0.001)
+        self.field_directions = {self.snake_poses[0]: self.direction}
 
-def spawnapple():
+    def listen_for_input(self):
+        while self.run:
+            for i, c in enumerate(self.key_map):
+                if is_pressed(c) and (
+                    self.direction == -1 or abs(i - self.direction) != 2
+                ):
+                    self.direction = i
+                    time.sleep(self.update_delay)
+            time.sleep(0.0001)
 
-    global field
-    global posapplex
-    global posappley
-    global schwanzteile
+    def __str__(self) -> str:
+        out = ""
+        for row in self.field:
+            out += "".join(row) + "\n"
+        return out
 
-    while True:
-        posappley = random.randint(0,len(field)-1)
-        posapplex = random.randint(0,len(field[0])-1)
+    def print(self):
+        if self.__printed:
+            print(end=self.MOVE_CURSOR_UP * (self.field_size[1] + 1))
+        print(self)
+        self.__printed = True
 
-        if field[posappley][posapplex] == "[ ]":
-            schwanzteile.append([])
-            schwanzteile[len(schwanzteile)-1].append(posappley)
-            schwanzteile[len(schwanzteile)-1].append(posapplex)                   #🍎
-            field[posappley][posapplex] = "[o]"
-            writefield(field)
-            break
+    def spawn_snake(self):
+        assert self.field[0][0] == self.empty_field
+        self.field[0][0] = self.snake_heads[1]
+
+    def spawn_apple(self):
+        while True:
+            rx, ry = randint(0, self.field_size[0] - 1), randint(
+                0, self.field_size[1] - 1
+            )
+            if self.field[ry][rx] == self.empty_field:
+                break
+        self.field[ry][rx] = self.apple_field
+        return rx, ry
+
+    def check_head(self):
+        x, y = self.snake_poses[0]
+        nx, ny = x, y
+
+        if self.direction == 0:
+            ny -= 1
+        elif self.direction == 1:
+            nx += 1
+        elif self.direction == 2:
+            ny += 1
+        elif self.direction == 3:
+            nx -= 1
+
+        return (
+            0 <= nx < self.field_size[0]
+            and 0 <= ny < self.field_size[1]
+            and (nx, ny) not in self.snake_poses[1:]
+        )
+
+    def move_snakepart(self, direction: int, snake_idx: int):
+        x, y = self.snake_poses[snake_idx]
+        nx, ny = x, y
+
+        if direction == 0:
+            ny -= 1
+        elif direction == 1:
+            nx += 1
+        elif direction == 2:
+            ny += 1
+        elif direction == 3:
+            nx -= 1
         else:
-            posappley = random.randint(0,len(field)-1)
-            posapplex = random.randint(0,len(field[0])-1)
-            continue
+            raise Exception
 
-def gameover():
-    print("Game Over")
-    print("Score: "+str(len(schwanzteile)-1))
-    time.sleep(5)
-    exit()
-
-def listenforinput():
-
-    global posx
-    global posy
-    global field
-    global schwanzteile
-    global posapplex
-    global posappley
-    global visitedfields
-    global c
-    global direction
-
-    visitedfields.append([])
-
-    for i in range(len(field)):
-        for j in range(len(field[i])):
-            field[i][j] = "[ ]"
-
-    schwanzteile[0][0] = posy
-    schwanzteile[0][1] = posx
-    
-    field[posappley][posapplex] = "[o]"
-
-    if direction == "w":
-        posy-=1
-    elif direction == "a":
-        posx-=1
-    elif direction == "s":
-        posy+=1
-    elif direction == "d":
-        posx+=1
-
-    visitedfields[c].append(posy)
-    visitedfields[c].append(posx)
-
-    for i in range(len(visitedfields)-len(schwanzteile)):
-        visitedfields.pop(0)
-        c-=1
-
-    for i in range(len(visitedfields)-1):
-        field[visitedfields[i][0]][visitedfields[i][1]] = "[=]"
-
-    if str(posx).startswith("-") or str(posy).startswith("-"):
-        gameover()
-
-    try:
-        if field[posy][posx] == "[=]":
-            gameover()
-    except IndexError:
-        pass
-
-    try:
-        field[posy][posx] = "[0]"
-    except IndexError:
-        gameover()
-
-    writefield(field)
-
-while True:
-    try:
-        fieldhight = int(input("Fieldheight: "))
-        fieldwidth = int(input("Fieldwidth: "))
-        if fieldhight < 3 or fieldwidth < 3:
-            print("Minimum size is 3")
+        if snake_idx == 0:
+            self.field[ny][nx] = self.snake_heads[direction]
+            self.field_directions[x, y] = direction
         else:
-            break
-    except ValueError:
-        continue
+            self.field[ny][nx] = self.snake_field
 
-field = [["[0]"]]
+        self.snake_poses[snake_idx] = (nx, ny)
+        self.field[y][x] = self.empty_field
 
+    def move_snake(self, direction: int):
+        for i, pos in enumerate(self.snake_poses):
+            if i == len(self.snake_poses) - 1:
+                self.snake_spawn = pos
+            if i == 0:
+                self.move_snakepart(direction, 0)
+                continue
+            self.move_snakepart(self.field_directions[pos], i)
 
-for j in range(fieldhight):
-    field.append([])
-    if j == 0:
-        for i in range(fieldwidth-1):
-            field[j].append("[ ]")
-    else:
-        for i in range(fieldwidth):
-            field[j].append("[ ]")
+    def grow_snake(self):
+        self.snake_poses.append(self.snake_spawn)
 
-field.pop()
+    def eat_apple(self):
+        self.apple_pos = self.spawn_apple()
+        self.grow_snake()
+        self.score += 1
 
-schwanzteile = []
-visitedfields = []
-posx,posy = 0,0
-posapplex,posappley = 0,0
-c = 0
-
-visitedfields.append([])
-visitedfields[c].append(posy)
-visitedfields[c].append(posx)
-
-print(len(field))
-
-spawnapple()
-
-writefield(field)
-
-threading.Thread(target=listener).start()
-
-while True:
-    if posx == posapplex and posy == posappley:
-        spawnapple()
-
-    c+=1
-    listenforinput()
-
-    time.sleep(0.5)
-
-    if len(schwanzteile) == len(field[0])*len(field):
-        print("WoW you won!")
-        print("Score:"+str(len(schwanzteile)-1))
-        time.sleep(10)
+    def end_game(self):
+        self.run = False
+        print(f"Score: {self.score}")
         exit()
+
+    def tick(self):
+
+        self.print()
+        self.wait_for_start()
+
+        while self.run:
+
+            if not self.check_head():
+                self.end_game()
+
+            self.move_snake(self.direction)
+            self.print()
+
+            if self.snake_poses[0] == self.apple_pos:
+                self.eat_apple()
+
+            time.sleep(self.update_delay)
+
+    def start(self):
+        self.tick()
+
+
+if __name__ == "__main__":
+    sg = SnakeGame()
+    sg.start()
