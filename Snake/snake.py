@@ -1,8 +1,7 @@
 from random import randint
 from threading import Thread
 import time
-from keyboard import is_pressed
-
+from pynput import keyboard
 
 class SnakeGame:
 
@@ -26,25 +25,29 @@ class SnakeGame:
         self.update_delay = update_delay
         self.__printed = False
         self.run = True
-        self.key_listener = Thread(target=self.listen_for_input)
+
+        listener = keyboard.Listener(on_press=self.on_key_press)
+        listener.start()
+
         self.spawn_snake()
         self.apple_pos = self.spawn_apple()
-        self.key_listener.start()
 
     def wait_for_start(self):
         while self.direction in (-1, 0, 3):
             time.sleep(0.001)
         self.field_directions = {self.snake_poses[0]: self.direction}
 
-    def listen_for_input(self):
-        while self.run:
-            for i, c in enumerate(self.key_map):
-                if is_pressed(c) and (
-                    self.direction == -1 or abs(i - self.direction) != 2
-                ):
-                    self.direction = i
-                    time.sleep(self.update_delay)
-            time.sleep(0.0001)
+    def on_key_press(self, key):
+        try:
+            key.char
+        except AttributeError:
+            return
+        for i, c in enumerate(self.key_map):
+            if key.char == c and (
+                self.direction == -1 or abs(i - self.direction) != 2
+            ):
+                self.direction = i
+                time.sleep(self.update_delay)
 
     def __str__(self) -> str:
         out = ""
