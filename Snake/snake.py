@@ -11,7 +11,7 @@ class SnakeGame:
     snake_heads = ["[A]", "[>]", "[V]", "[<]"]
     apple_field = "[O]"
     MOVE_CURSOR_UP = "\033[A"
-    key_map = "WDSA"
+    key_map = "wdsa"
     score = 0
 
     def __init__(self, field_size=(10, 10), update_delay=0.5) -> None:
